@@ -1,0 +1,27 @@
+#MIPS Programming Assignment 2 - Como Org I Fall 2017
+#Victoria Velazquez
+
+.data 																#declare variables
+	str1: .space 1001 										#allocating space in memory
+	large_error_msg: .ascii "too large."
+	nan_error_msg: .ascii "NaN."
+	newline: .ascii "\n"
+
+.text  													#where code is 	being executed
+
+main:
+	la $a0, str1 								    #making variable to store user input
+	li $a1, 1001 											#limits amount of characters
+	li $v0, 8							#loads syscall that reads user input for strings
+	syscall 
+	li $t1, 0									 #sum of character count/length set to 0
+
+loop_for_character_count:
+	lb $t0, 0($a0) 									#loads a byte from the string array 
+	beq $t0, 0, exit1 											#if char is null, exit
+	beq $t0, 10, exit1										#if char is newline, exit
+	addi $a0, $a0, 1 			#iterating through string array/increase to next byte
+	addi $t1, $t1, 1												#add to sum
+	j loop_for_character_count
+exit1:
+	ble $t1, 0, invalid 								 #checking for empty string
