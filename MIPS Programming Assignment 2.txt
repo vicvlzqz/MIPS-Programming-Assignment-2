@@ -3,6 +3,8 @@
 
 .data 																#declare variables
 	str1: .space 1001 										#allocating space in memory
+	temp_str: .space 1001
+	str2: .ascii ","
 	large_error_msg: .ascii "too large."
 	nan_error_msg: .ascii "NaN."
 	newline: .ascii "\n"
@@ -13,9 +15,10 @@ main:
 	la $a0, str1 								    #making variable to store user input
 	li $a1, 1001 											#limits amount of characters
 	li $v0, 8							#loads syscall that reads user input for strings
+	add $s0,$zero,$a0                                    #load input into register
 	syscall 
-	li $t1, 0									 #start of string/length set to 0
-	li $t2, 0									 #sum of character count/length set to 0
+	add $t3,$zero,$s0                                    #storing input value in register
+	move $s0, $zero                                      #resetting $s0 
 loop_for_character_count:
 	lb $t0, 0($a0) 									#loads a byte from the string array 
 	beq $t0, 0, exit1 											#if char is null, exit
