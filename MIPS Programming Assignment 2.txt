@@ -80,70 +80,54 @@ is_too_large:
 	lb $t6,0($t3)                #go to next char
 	beq $t6,10,exit2          #if new line, exit
 	beq $t6,$zero,exit2       #if null, exit
-subprogram_1:
-	#ASCII: *<0<9<*<A<F<*<a<f*<*
-	#Decimal: *<48<57<*<65<70<*<97<102<*
-	lb $t0, 0($s0) 									#loads a byte from the string array 
-	beq $t0, 0, exit2 											#if char is null, exit
-	beq $t0, 10, exit2 										#if char is newline, exit
-	beq $t0, 44, exit2										#if char is a comma, exit
-	beq $t2, 9, large_error_msg 				#if string is more than 8 characters	
-	addi $s0, $s0, 1 			#iterating through string array/increase to next byte
-	sub $s5, $s5, 4 								#keeping track of shift amount
 
-	blt $t0, 48, nan_error_msg 								#if char is less than 0
-	blt $t0, 58, is_number 								    #if char is less than 9
-	blt $t0, 65, nan_error_msg 								#if char is less than A
-	blt $t0, 71, is_uppercase 								#if char is less than F
-	blt $t0, 97, nan_error_msg 								#if char is less than a
-	blt $t0, 103, is_lowercase 								#if char is less than f
-	bgt $t0, 102, nan_error_msg 						 #if char is greater than f
+subprogram_1: #convert single char
+	addi $sp,$sp,-4                             
+	sw $ra, 12($sp)                             #save return address 
+	add $t1, $a0, $zero                         
+	move $t2,$zero                              #resetting
+	blt $t1,48, invalid                          #if character is less than 0
+	blt $t1,58, is_number                        #if char is less than 9
+	blt $t1,65, invalid                          #if char is less than A
+	blt $t1,71, is_uppercase                  #if char is less than F
+	blt $t1,97, invalid                        #if char is less than a
+	blt $t1,103, is_lowercase                 #if char is less than f
+	#bgt $t0, 102, nan_error_msg 			 #if char is greater than f
 	j subprogram_1
-exit2:
-invalid:
-	li $v0, 4														#calling function to print a string
-	la $a0, error_msg 												#print error msg
-	syscall 
-	li $v0, 10 														#terminate execution
-	syscall
-
+		
 is_number:
-	addi $t0, $t0, -48  											#convert to decimal
-	sllv $t0, $t0, $s5 												#shifting
-	add $s6, $t0, $s6 												#adding to sum
-	j loop_for_validity
-
+	addi $t2,$t1,-48                            #convert 0-9 number ascii to hex
+	addi $a0, $t2, 0                            
+	lw $ra, 12($sp)                             
+	addi $sp, $sp, 4                            
+	jr $ra                                      #jump
+	 
 is_uppercase:
-	addi $t0, $t0, -55												#convert to decimal
-	sllv $t0, $t0, $s5 												#shifting
-	add $s6, $t0, $s6 												#adding to sum
-	j loop_for_validity
-
+	addi $t2,$t1,-55                            #convert A-F ascii to hex
+	addi $a0, $t2, 0                            
+	lw $ra, 12($sp)                             
+	addi $sp, $sp, 4                            
+	jr $ra                                      #jump
+	 
 is_lowercase:
-	addi $t0, $t0, -87 												#convert to decimal
-	sllv $t0, $t0, $s5 												#shifting
-	add $s6, $t0, $s6 												#adding to sum
-	j subprogram_2
-
-convert:
-	li $t3, 10000 													#assigning 10000 to address
-	divu $s6, $t3 											#dividing sum by 10000 to convert from two's complement 
-	mflo $t4														#remainder
-	mfhi $t5														#quotient
-
-	li $v0, 1 														#calling function to print a integar
-	add $a0, $t4, $0 												#printing remainder
-	syscall
-	li $v0, 1 														#calling function to print a integar
-	add $a0, $t5, $0 												#printing quotient
-	syscall
+	addi $t2,$t1,-87                            #convert a-f ascii to hex
+	addi $a0, $t2, 0                            
+	lw $ra, 12($sp)                             
+	addi $sp, $sp, 4                            
+	jr $ra                                      #jump
+	 
+invalid:
+	jal is_nan                             #calls invalid nan program
+	addi $a0, $zero, -3                         #load -1 
+	lw $ra, 12($sp)                             
+	addi $sp, $sp, 4                            #reset
+	jr $ra                                      #jump
 
 
 subprogram_2:
-calls sub1 to get decimal value of each character
+#calls sub1 to get decimal value of each character
 
-exit3:
 
 subprogram_3:
 
-exit4:
+
