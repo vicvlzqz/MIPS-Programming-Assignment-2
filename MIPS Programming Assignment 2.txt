@@ -29,7 +29,7 @@ substr_process:
 	beq $t6,24,loop_through_input                        #if too large go to next substr
 	add $a0,$t4,$zero                                    #add parameter for subprogram2 
 	jal subprogram_2                                     #call subprogram2
-subprogram_2_output:  
+sub2_output:  
 	lw $s2, 0($sp)                                       #read value from subprogram2
 	addi $sp, $sp, 4                                     #account for spaces
 	beq $s2,-3, not_a_number                                   #if string is NaN
@@ -124,9 +124,40 @@ invalid:
 	jr $ra                                      #jump
 
 
-subprogram_2:
-#calls sub1 to get decimal value of each character
-
+subprogram_2:  		#calls sub1 to get decimal value of each character
+	add $t6,$a0,$zero             
+	move $t7,$zero                #reset sum
+	add $t8, $t6, $zero           #load string 
+	move $t6, $zero
+combine_loop:
+	bge $t6, $s1, exit3        #if char converted, exit
+	lb $s3, 0($t8)                #use first char 
+	addi $a0, $s3, 0              #put in register
+	jal subprogram_1              #call sub1
+	add $t9, $a0, $zero           #load result from program 1
+	beq $t9, -3, invalid_exit   #if hex char isnt valid, exit 
+	sll $t7,$t7,4                 #shift method
+	add $t7,$t7,$t9               #add decimal value 
+	addi $t8,$t8,1                #increment by 1
+	addi $t6,$t6,1                #increase counter
+	j combine_loop                #jump 
+		
+exit3:
+	addi $sp, $sp, -4             
+	beq $t7,$zero, zeros    #if all zeros
+	sw $t7, 0($sp)                #save value
+	j sub2_output         #jump
+	 
+invalid_exit:
+	addi $sp, $sp, -4             
+	sw $t9, 0($sp)                #save decimal value 
+	j sub2_output
+	 
+zeros:
+	move $t7, $zero
+	addi $t7, $t7, 0
+	sw $t7, 0($sp)                #save decimal value 
+	j sub2_output         #jump
 
 subprogram_3:
 
