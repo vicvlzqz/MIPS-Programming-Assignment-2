@@ -160,5 +160,63 @@ zeros:
 	j sub2_output         #jump
 
 subprogram_3:
-
+    move $s6, $zero
+	move $s7, $zero
+	addi $s4,$zero,7                  
+	bgt $s1,$s4,less_than_zero        #if length is less than zero
+	li $v0,1                          #to print
+	lw $a0, 0($sp)                    
+	syscall
+	lb $t5, 0($t3)                    #current char
+	beq $t5, 10, exit1                  #f char is new line, exit
+	beq $t5, $zero, exit1               #if char is null, exit
+	li $v0,11                         #to print a char
+	li $a0, ','                       #load comma
+	syscall
+	addi $t3,$t3,1                    #move to next char
+	lb $t6, 0($t3)
+	beq $t6, 44, reverse_in_string
+    jr $ra                            #returns from function
+less_than_zero:
+	addi $s5,$zero,10000         #initializes 
+	lw $t7, 0($sp)               #store number
+	divu $t7,$s5                 #divide sum by 10,000 to convert
+	mflo $s6                     #quotient
+	mfhi $s7                     #remainder
+    beq $s6, $zero, ignore_zero  #ignore extra zero
+	li $v0,1                     #code to print integer
+	add $a0,$zero,$s6            #quotient
+	syscall
+	li $v0,1                     
+	add $a0,$zero,$s7            #remainder
+	syscall
+	lb $t5, 0($t3)               #current character
+	beq $t5, 10, exit1             #if character is new line, exit
+	beq $t5, $zero, exit1          #if character is null, exit
+	li $v0,11                    #print a char
+	li $a0, ','                  #load comma
+	syscall
+	addi $t3,$t3,1               #move to next substr
+	lb $t6, 0($t3)
+	beq $t6, 44, reverse_in_string
+	jr $ra     	                 #jump
+	 
+	 
+ignore_zero:
+	li $v0,1                     
+	add $a0,$zero,$s7            #remainder
+	syscall
+	lb $t5, 0($t3)               #current char
+	beq $t5, 10, exit1             #if character is new line, exit
+	beq $t5, $zero, exit1          #if character is null, exit
+	li $v0,11                    
+	li $a0, ','                  #load comma
+	syscall
+	addi $t3,$t3,1               #move to next substr
+	jr $ra     	                 #jump 
+	 
+	 
+reverse_in_string:
+	addi $t3, $t3, -1
+	jr $ra
 
