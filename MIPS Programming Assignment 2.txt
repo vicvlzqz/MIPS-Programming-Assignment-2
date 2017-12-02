@@ -18,33 +18,68 @@ main:
 	add $s0,$zero,$a0                                        #load input into register
 	syscall
 	add $t3,$zero,$s0                                    	 #storing input value in register
-	move $s0, $zero                                      	 #resetting $s0                                     
+	move $s0, $zero                        #resetting $s0                                     
 loop_through_input:
 	move $t4,$zero                                       	 #resetting $t4
 	j check_for_validity                                     #call subprogram, validate, returns substr
-	substr_process:
-		addi $s0, $s0, 1                                     #increment counter to iterate through input
-		add $t4,$v0,$zero                                    #storing return value of valid substr
-		lb $t6,0($t4)                                        #load byte of str
-		beq $t6,$zero,loop_through_input                     #if substr was NaN then go to next substr
-		beq $t6,24,loop_through_input                        #if substr was too large then go to next substr
-		add $a0,$t4,$zero                                    #add parameter for subprogram2 
-	    jal subprogram_2                                     #call subprogram2
-	subprogram_2_output:  
-	    lw $s2, 0($sp)                                       #read value from subprogram2
-	    addi $sp, $sp, 4                                     #account for spaces
-	    beq $s2,-3,not_num                                   #if string is NaN
-	call_prog3:
-		sw $s2,0($sp)                                        #store subprogram3
-		jal subprogram_3                                     #root to subprogram3
-		j loop_through_input                                 #loops to check next substring
-	not_a_number:
-		bne $t5, 10, loop_through_input                      #does string qualify?
-		bne $t5, $zero, loop_through_input                   #continue to loop
-	exit1:
-		li $v0,10                     						 #terminate execution     
-		syscall													#sum 
-
+substr_process:
+	addi $s0, $s0, 1                               #increment counter to iterate through input
+	add $t4,$v0,$zero                                    #storing return value of valid substr
+	lb $t6,0($t4)                                        #load byte of str		beq $t6,$zero,loop_through_input                     #if substr was NaN go to next substr
+	beq $t6,24,loop_through_input                        #if too large go to next substr
+	add $a0,$t4,$zero                                    #add parameter for subprogram2 
+	jal subprogram_2                                     #call subprogram2
+subprogram_2_output:  
+	lw $s2, 0($sp)                                       #read value from subprogram2
+	addi $sp, $sp, 4                                     #account for spaces
+	beq $s2,-3, not_a_number                                   #if string is NaN
+connect_to_sub3:
+	sw $s2,0($sp)                                        #store subprogram3
+	jal subprogram_3                                     #root to subprogram3
+	j loop_through_input                                 #loops to check next substring
+not_a_number:
+	bne $t5, 10, loop_through_input                      #does string qualify?
+	bne $t5, $zero, loop_through_input                   #continue to loop
+exit1:
+	li $v0,10                     						 #terminate execution     
+	syscall													#sum 
+is_nan:
+	la $a0,nan_error_msg                  #load invalid input
+	li $v0,4                     #add to be printed with other substr 
+	syscall
+	beq $t5,10,exit2          #if new line, exit
+	beq $t5,$zero,exit2       #if null, exit
+	beq $t5,44,apply_comma         #print comma like in the input
+	addi $t3,$t3,1               #change current byte
+	lb $t6,0($t3)                #load next byte of string
+	beq $t6,10,exit2          #if new line, exit
+	beq $t6,$zero,exit2       #if null, exit
+apply_comma:	
+	li $v0,11                    #print char
+	li $a0, ','                  #add comma to substr
+	syscall	
+exit2:
+	lb $t5, 0($t3)               #keeping track of current char
+	beq $t5, 10, exit1             #f char is new line, exit
+	beq $t5, $zero, exit1          #if char is null, exit
+	addi $s6, $t3, -2
+	lb $s6, 0($t3)
+	beq $s6, 44, jump
+	addi $t3,$t3,1               #move to next substr
+jump:
+	jr $ra	                     
+		
+is_too_large:
+	la $a0,large_error_msg                  #load too large string
+	li $v0,4                     #add to be printed with other substr
+	syscall
+	beq $t5,10,exit2          #if new line, exit
+	beq $t5,$zero,exit2       #if null, exit
+	beq $t5,44,apply_comma         #add comma to substr
+	addi $t3,$t3,1               #change current byte
+	lb $t6,0($t3)                #go to next char
+	beq $t6,10,exit2          #if new line, exit
+	beq $t6,$zero,exit2       #if null, exit
 subprogram_1:
 	#ASCII: *<0<9<*<A<F<*<a<f*<*
 	#Decimal: *<48<57<*<65<70<*<97<102<*
