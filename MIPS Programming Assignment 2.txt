@@ -1,6 +1,6 @@
 #MIPS Programming Assignment 2 - Como Org I Fall 2017
 #Victoria Velazquez
-
+#clone https://github.com/vicvlzqz/MIPS-Programming-Assignment-2.git
 .data														 #declare variables
 	str1: .space 1001        							 	 #allocating space in memory
 	temp_str: .space 1001
@@ -12,7 +12,7 @@
 .text 														  #where code is being executed
 		
 main:
-	la $a0, str1 								    	 	 #making variable to store user input
+	la $a0, str1 							    	 	 #making variable to store user input
 	li $a1, 1001 											 #limits amount of characters
 	li $v0, 8												 #loads syscall that reads user input for strings
 	add $s0,$zero,$a0                                        #load input into register
@@ -21,11 +21,12 @@ main:
 	move $s0, $zero                        #resetting $s0                                     
 loop_through_input:
 	move $t4,$zero                                       	 #resetting $t4
-	j check_for_validity                                     #call subprogram, validate, returns substr
+	j check_for_validity                         #call subprogram, validate, returns substr
 substr_process:
 	addi $s0, $s0, 1                               #increment counter to iterate through input
 	add $t4,$v0,$zero                                    #storing return value of valid substr
-	lb $t6,0($t4)                                        #load byte of str		beq $t6,$zero,loop_through_input                     #if substr was NaN go to next substr
+	lb $t6,0($t4)                                        #load byte of str		
+	beq $t6,$zero,loop_through_input                     #if substr NaN go to next substr
 	beq $t6,24,loop_through_input                        #if too large go to next substr
 	add $a0,$t4,$zero                                    #add parameter for subprogram2 
 	jal subprogram_2                                     #call subprogram2
@@ -40,6 +41,8 @@ connect_to_sub3:
 not_a_number:
 	bne $t5, 10, loop_through_input                      #does string qualify?
 	bne $t5, $zero, loop_through_input                   #continue to loop
+exitloop: 
+
 exit1:
 	li $v0,10                     						 #terminate execution     
 	syscall													#sum 
@@ -75,11 +78,25 @@ is_too_large:
 	syscall
 	beq $t5,10,exit2          #if new line, exit
 	beq $t5,$zero,exit2       #if null, exit
-	beq $t5,44,apply_comma         #add comma to substr
+	beq $t5,44,apply_comma_again         #add comma to substr
 	addi $t3,$t3,1               #change current byte
 	lb $t6,0($t3)                #go to next char
 	beq $t6,10,exit2          #if new line, exit
 	beq $t6,$zero,exit2       #if null, exit
+apply_comma_again:	
+	li $v0,11                    #print char
+	li $a0, ','                  #add comma to substr
+	syscall	
+exit2_again:
+	lb $t5, 0($t3)               #keeping track of current char
+	beq $t5, 10, exit1             #f char is new line, exit
+	beq $t5, $zero, exit1          #if char is null, exit
+	addi $s6, $t3, -2
+	lb $s6, 0($t3)
+	beq $s6, 44, jump_again
+	addi $t3,$t3,1               #move to next substr
+jump_again:
+	jr $ra
 
 subprogram_1: #convert single char
 	addi $sp,$sp,-4                             
@@ -93,7 +110,7 @@ subprogram_1: #convert single char
 	blt $t1,97, invalid                        #if char is less than a
 	blt $t1,103, is_lowercase                 #if char is less than f
 	#bgt $t0, 102, nan_error_msg 			 #if char is greater than f
-	j subprogram_1
+	j invalid
 		
 is_number:
 	addi $t2,$t1,-48                            #convert 0-9 number ascii to hex
@@ -175,7 +192,7 @@ subprogram_3:
 	syscall
 	addi $t3,$t3,1                    #move to next char
 	lb $t6, 0($t3)
-	beq $t6, 44, reverse_in_string
+	beq $t6, 44, reverse
     jr $ra                            #returns from function
 less_than_zero:
 	addi $s5,$zero,10000         #initializes 
@@ -190,15 +207,15 @@ less_than_zero:
 	li $v0,1                     
 	add $a0,$zero,$s7            #remainder
 	syscall
-	lb $t5, 0($t3)               #current character
-	beq $t5, 10, exit1             #if character is new line, exit
-	beq $t5, $zero, exit1          #if character is null, exit
+	lb $t5, 0($t3)               #current char
+	beq $t5, 10, exit1             #if char is new line, exit
+	beq $t5, $zero, exit1          #if char is null, exit
 	li $v0,11                    #print a char
 	li $a0, ','                  #load comma
 	syscall
 	addi $t3,$t3,1               #move to next substr
 	lb $t6, 0($t3)
-	beq $t6, 44, reverse_in_string
+	beq $t6, 44, reverse
 	jr $ra     	                 #jump
 	 
 	 
@@ -207,8 +224,8 @@ ignore_zero:
 	add $a0,$zero,$s7            #remainder
 	syscall
 	lb $t5, 0($t3)               #current char
-	beq $t5, 10, exit1             #if character is new line, exit
-	beq $t5, $zero, exit1          #if character is null, exit
+	beq $t5, 10, exit1             #if char is new line, exit
+	beq $t5, $zero, exit1          #if char is null, exit
 	li $v0,11                    
 	li $a0, ','                  #load comma
 	syscall
@@ -216,7 +233,115 @@ ignore_zero:
 	jr $ra     	                 #jump 
 	 
 	 
-reverse_in_string:
+reverse:
 	addi $t3, $t3, -1
 	jr $ra
 
+check_for_validity:
+		la $t8, temp_str                         #load string 
+	
+reset:
+	beq $s1,$zero, is_zero                 #if counter is zero, exit
+	sb $zero,0($t8)                          #add zero to string
+	addi $s1,$s1,-1                          #decrease counter
+	addi $t8,$t8,1                            
+	j reset                           #loop again
+is_zero:
+	move $s1,$zero                           #initialize counter with 0
+	beq $s0, 0, save_char           #save char if first iteration
+	lb $t5, 0($t3)
+	beq $t5,44,is_empty                   #current char is comma, check if empty 
+save_char:
+	lb $t5, 0($t3)                           
+	beq $t5,44, is_empty                   #current char is comma, check if empty 
+	
+finalize_substr:
+	lb $t5,0($t3)                            #load first byte 
+	beq $t5,44, is_empty                   #if char is comma, exit
+	beq $t5,10, is_empty                   #if char is new line, exit
+	beq $t5,$zero, is_empty                #if char is null, exit
+	beq $t5,32, ignore                  #if char is a leading space, ignore 
+	beq $t5,9, ignore                   #if char is a leading tab ignore
+    jal read_input                           #jump
+ 
+exit4:
+	la $v0, temp_str                         #load address of string
+	j substr_process                 #return from function
+	
+exit5:
+	la $v0, temp_str                         #load address of string
+	addi $t3, $t3, 1                         #change current byte
+	j substr_process                 #jump
+	
+ignore:
+	addi $t3,$t3,1                           #change current byte to next byte of string
+	j finalize_substr                            #jumps to beginning of loop	
+ 
+read_input:
+	la $t8, temp_str
+	addi $sp,$sp,-4                          #reserve space for stack
+	sw $ra,0($sp)                            #store return address in the stack
+reading_loop:
+	bge $s1,9,too_large             #if substr is greater than 8 characters
+	beq $t5,32,remaining                     #checks for tabs or spaces
+	beq $t5,9,remaining                      #checks for tabs or spaces
+	beq $t5,44,exit6                #if char is comma, exit
+	beq $t5,$zero,exit6             #if char is new line, exit
+	beq $t5,10,exit6                #if char is null, exit
+	addi $t3,$t3,1                           #changes current to next 
+	sb $t5, 0($t8)                           #save char to string
+	addi $t8, $t8, 1                         #change current string
+	addi $s1,$s1,1                           #increase counter 
+    lb $t5,0($t3)                            
+    j reading_loop                              #loop
+exit6:
+	la $t8, temp_str                         
+	lw $ra,0($sp)                            
+	addi $sp,$sp,4                           #add space to stack
+	jr $ra                                   #jump return
+	 
+	 
+remaining:
+	addi $t3,$t3,1 #change current byte
+	lb $t5,0($t3) #load byte
+	beq $t5,32,remaining                     #checks for tabs or spaces
+	beq $t5,9,remaining                       #checks for tabs or spaces
+	beq $t5,44,exit6                 #if char is a comma, exit
+	beq $t5,10,exit6                 #if char is a new line, exit
+	beq $t5,$zero,exit6              #if char is null, exit
+	la $t8,temp_str                           #load address of string
+	sb $zero,0($t8)                           #change to zero
+	add $a0,$t8,$zero                         
+	jal is_nan
+	j extra
+	 
+too_large:
+	la $t8,temp_str                           #load address of string
+	sb $zero,0($t8)                           #change to zero
+	jal is_too_large                         #calls invalid subprogram
+	j exit4                           #jumps to exit
+extra:
+	lb $t5,0($t3) 						#load byte in string
+	beq $t5,44,exit4                  #if char is comma, exit
+	beq $t5,10,exit4                  #if char is a new line, exit
+	beq $t5,$zero,exit4               #if char is null, exit
+	addi $t3,$t3,1                            #changes current byte
+	j extra                             
+ 
+is_empty:
+	addi $t6, $t3, -1
+	lb $t6, 0($t6)
+	beq $t6, 44, nan
+	beq $t6, $zero, nan
+	beq $t6, 10, nan
+	beq $t6, 32, s_and_c
+	beq $t6, 9, s_and_c
+	j exit5                  #jumps to exit 
+	
+nan:
+	jal is_nan
+	addi $t3, $t3, 1
+	j exit4		
+		
+s_and_c:
+	beq $s1, $zero, nan
